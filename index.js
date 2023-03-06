@@ -82,6 +82,7 @@ const server = new ApolloServer({
 
 /* Add data sources to server's context function */
 const { url } = await startStandaloneServer(server, {
+    listen: { port: process.env.PORT || 8123 },
     context: async () => {
         const { cache } = server;
         return {
@@ -91,7 +92,6 @@ const { url } = await startStandaloneServer(server, {
             },
         };
     },
-
 });
 
 console.log(`🚀  Server ready at: ${url}`);
