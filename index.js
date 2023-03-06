@@ -3,59 +3,85 @@ import { startStandaloneServer } from '@apollo/server/standalone';
 /* https://www.apollographql.com/docs/apollo-server/data/fetching-rest */
 import { RESTDataSource } from '@apollo/datasource-rest';
 
-// schema
 const typeDefs = `#graphql
     type Lesson {
         title: String!
     }
 
+    type Pokemon {
+        name: String!
+        image: String!
+    }
+
+    type BasicPokemon {
+        name: String!
+    }
+
     type Query {
-        lessons: [Lesson]
+        lessons: [Lesson!]!
+        getPokemon(name: String!): Pokemon!
+        search(searchString: String!): [BasicPokemon]!
     }
 `;
 
-
 class LessonsAPI extends RESTDataSource {
-    baseURL = 'https://www.c0d3.com/api/lessons';
+    baseURL = 'https://www.c0d3.com/api/lessons/';
 
     async getLessons() {
-        return this.get(``);
+        return this.get('./');
     }
 }
 
-// resolver
+class PokemonAPI extends RESTDataSource {
+    baseURL = 'https://pokeapi.co/api/v2/';
+
+    async getPokemon(name) {
+        const data = this.get(`./pokemon/${name}`);
+        return {
+            name: data.name,
+            image: this.sprites.front_default,
+        };
+    }
+}
+
+const allPokemonData = 
+    await fetch('https://pokeapi.co/api/v2/pokemon/?offset=0&limit=5000')
+    .then(res => res.json());
+const allPokemonNames = allPokemonData.results.map(e => ({ name: e.name }));
+
 const resolvers = {
     Query: {
         lessons: async (_, __, { dataSources }) => {
-            console.log(await dataSources.lessonsAPI.getLessons());
             return dataSources.lessonsAPI.getLessons();
         },
+        getPokemon: (_, { name }, { dataSources }) => {
+            return dataSources.pokemonAPI.getPokemon(name);
+        },
+        search: () => {
+            return allPokemonNames.filter(e => {
+                return e.name.includes(searchString.toLowerCase());
+            });
+        }
     },
 };
 
-// create instance of ApolloServer
 const server = new ApolloServer({
     typeDefs,
     resolvers
 });
 
-// add data sources to server's context function
+/* Add data sources to server's context function */
 const { url } = await startStandaloneServer(server, {
     context: async () => {
         const { cache } = server;
         return {
             dataSources: {
                 lessonsAPI: new LessonsAPI({ cache }),
-                //another subclass here
+                pokemonAPI: new PokemonAPI({ cache }),
             },
         };
     },
+
 });
 
-
-
 console.log(`🚀  Server ready at: ${url}`);
-
-
-// lessons Query returns a list of lesson titles
-// titles are a string
