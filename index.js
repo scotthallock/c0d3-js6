@@ -1,5 +1,7 @@
 import { ApolloServer } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
+import { ApolloServerPluginLandingPageLocalDefault,
+         ApolloServerPluginLandingPageProductionDefault } from '@apollo/server/plugin/landingPage/default';
 import { RESTDataSource } from '@apollo/datasource-rest';
 import fetch from 'node-fetch';
 
@@ -77,7 +79,10 @@ const resolvers = {
 
 const server = new ApolloServer({
     typeDefs,
-    resolvers
+    resolvers,
+    plugins: [
+        ApolloServerPluginLandingPageProductionDefault({ embed: true })
+    ]
 });
 
 /* Add data sources to server's context function */
