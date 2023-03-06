@@ -3,27 +3,32 @@ import { startStandaloneServer } from '@apollo/server/standalone';
 /* https://www.apollographql.com/docs/apollo-server/data/fetching-rest */
 import { RESTDataSource } from '@apollo/datasource-rest';
 
+/* Define schema */
 const typeDefs = `#graphql
     type Lesson {
-        title: String!
+        title: String
     }
 
     type Pokemon {
-        name: String!
-        image: String!
+        name: String
+        image: String
     }
 
     type BasicPokemon {
-        name: String!
+        name: String
     }
 
     type Query {
-        lessons: [Lesson!]!
-        getPokemon(name: String!): Pokemon!
-        search(searchString: String!): [BasicPokemon]!
+        lessons: [Lesson]
+        getPokemon(name: String!): Pokemon
+        search(searchString: String!): [BasicPokemon]
     }
 `;
 
+/**
+ * Extend RESTDataSource classes to fetch data from REST APIs
+ * See: https://www.apollographql.com/docs/apollo-server/data/fetching-rest
+ */
 class LessonsAPI extends RESTDataSource {
     baseURL = 'https://www.c0d3.com/api/lessons/';
 
@@ -36,19 +41,24 @@ class PokemonAPI extends RESTDataSource {
     baseURL = 'https://pokeapi.co/api/v2/';
 
     async getPokemon(name) {
-        const data = this.get(`./pokemon/${name}`);
+        const data = await this.get(`./pokemon/${name}`);
         return {
             name: data.name,
-            image: this.sprites.front_default,
+            image: data.sprites.front_default,
         };
     }
 }
 
+/**
+ * Get list of all pokemon names from PokeAPI.
+ * (Set ?limit=10000 so all pokemon are returned on one page.)
+ */
 const allPokemonData = 
-    await fetch('https://pokeapi.co/api/v2/pokemon/?offset=0&limit=5000')
+    await fetch('https://pokeapi.co/api/v2/pokemon/?offset=0&limit=10000')
     .then(res => res.json());
 const allPokemonNames = allPokemonData.results.map(e => ({ name: e.name }));
 
+/* Define resolvers */
 const resolvers = {
     Query: {
         lessons: async (_, __, { dataSources }) => {
@@ -57,11 +67,11 @@ const resolvers = {
         getPokemon: (_, { name }, { dataSources }) => {
             return dataSources.pokemonAPI.getPokemon(name);
         },
-        search: () => {
+        search: (_, { searchString }) => {
             return allPokemonNames.filter(e => {
                 return e.name.includes(searchString.toLowerCase());
             });
-        }
+        },
     },
 };
 
