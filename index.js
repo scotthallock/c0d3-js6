@@ -1,7 +1,7 @@
 import { ApolloServer } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
-/* https://www.apollographql.com/docs/apollo-server/data/fetching-rest */
 import { RESTDataSource } from '@apollo/datasource-rest';
+import fetch from 'node-fetch';
 
 /* Define schema */
 const typeDefs = `#graphql
