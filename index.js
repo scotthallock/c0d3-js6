@@ -1,34 +1,35 @@
 import { ApolloServer } from '@apollo/server';
 import { startStandaloneServer } from '@apollo/server/standalone';
+/* https://www.apollographql.com/docs/apollo-server/data/fetching-rest */
+import { RESTDataSource } from '@apollo/datasource-rest';
 
 // schema
 const typeDefs = `#graphql
-    type Book {
-        title: String
-        author: String
+    type Lesson {
+        title: String!
     }
 
     type Query {
-        books: [Book]
+        lessons: [Lesson]
     }
 `;
 
-// data set
-const books = [
-    {
-        title: 'The Awakening',
-        author: 'Kate Chopin',
-    },
-    {
-        title: 'City of Glass',
-        author: 'Paul Auster',
-    },
-];
+
+class LessonsAPI extends RESTDataSource {
+    baseURL = 'https://www.c0d3.com/api/lessons';
+
+    async getLessons() {
+        return this.get(``);
+    }
+}
 
 // resolver
 const resolvers = {
     Query: {
-        books: () => books,
+        lessons: async (_, __, { dataSources }) => {
+            console.log(await dataSources.lessonsAPI.getLessons());
+            return dataSources.lessonsAPI.getLessons();
+        },
     },
 };
 
@@ -38,8 +39,23 @@ const server = new ApolloServer({
     resolvers
 });
 
+// add data sources to server's context function
 const { url } = await startStandaloneServer(server, {
-    listen: { port: 4000 },
+    context: async () => {
+        const { cache } = server;
+        return {
+            dataSources: {
+                lessonsAPI: new LessonsAPI({ cache }),
+                //another subclass here
+            },
+        };
+    },
 });
 
+
+
 console.log(`🚀  Server ready at: ${url}`);
+
+
+// lessons Query returns a list of lesson titles
+// titles are a string
